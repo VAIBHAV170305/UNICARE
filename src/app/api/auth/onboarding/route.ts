@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const sessionUser = {
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: (user as any).role || "USER",
       profile: {
         name: user.name,
         age: userProfile.age,
