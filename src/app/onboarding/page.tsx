@@ -351,7 +351,7 @@ export default function OnboardingPage() {
                         <option value="General fitness & wellness">General fitness & wellness</option>
                         <option value="Stress reduction & sleep improvement">Stress reduction & sleep improvement</option>
                         <option value="Chronic condition management">Chronic condition management</option>
-                        <option value="Women's hormonal wellness">Women's hormonal wellness</option>
+                        <option value="Women's hormonal wellness">{"Women's hormonal wellness"}</option>
                       </select>
                     </div>
                   </motion.div>

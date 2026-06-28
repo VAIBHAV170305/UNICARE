@@ -111,9 +111,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setUser(data.user);
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login fetch error:", err);
-      return { success: false, error: err.message || "Unable to connect to the login server." };
+      const msg = err instanceof Error ? err.message : "Unable to connect to the login server.";
+      return { success: false, error: msg };
     }
   };
 
@@ -147,9 +148,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setUser(data.user);
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Signup fetch error:", err);
-      return { success: false, error: err.message || "Unable to connect to the registration server." };
+      const msg = err instanceof Error ? err.message : "Unable to connect to the registration server.";
+      return { success: false, error: msg };
     }
   };
 
@@ -231,9 +233,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       router.push("/login");
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Delete account error:", err);
-      return { success: false, error: err.message || "Failed to contact deletion server." };
+      const msg = err instanceof Error ? err.message : "Failed to contact deletion server.";
+      return { success: false, error: msg };
     }
   };
 

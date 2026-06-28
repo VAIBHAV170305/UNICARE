@@ -1,24 +1,72 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, Search, Menu, X } from "lucide-react";
+import { ArrowRight, Search, Menu, X } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 import CommandPalette from "./CommandPalette";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 
+const NAV_LINKS = [
+  { label: "Features",   href: "#features"     },
+  { label: "Statistics", href: "#statistics"   },
+  { label: "Timeline",   href: "#timeline"     },
+  { label: "Reviews",    href: "#testimonials" },
+];
+
 export default function FloatingNavbar() {
   const { user } = useAuth();
-  const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const [isCommandOpen, setIsCommandOpen]     = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection]     = useState<string>("");
+  const [scrolled, setScrolled]               = useState(false);
 
-  const navLinks = [
-    { label: "Features", href: "#features" },
-    { label: "Statistics", href: "#statistics" },
-    { label: "Timeline", href: "#timeline" },
-    { label: "Reviews", href: "#testimonials" },
-  ];
+  // Track scroll depth for navbar backdrop enhancement
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // IntersectionObserver — highlight the nav link for the visible section
+  useEffect(() => {
+    const sectionIds = NAV_LINKS.map((l) => l.href.replace("#", ""));
+    const observers: IntersectionObserver[] = [];
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setActiveSection(id);
+        },
+        { threshold: 0.35, rootMargin: "-60px 0px 0px 0px" }
+      );
+
+      obs.observe(el);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach((o) => o.disconnect());
+  }, []);
+
+  // Smooth-scroll handler — no full-page navigation, just scrollIntoView
+  const handleNavClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+      if (!href.startsWith("#")) return;
+      e.preventDefault();
+      const id = href.replace("#", "");
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        setActiveSection(id);
+      }
+      setIsMobileMenuOpen(false);
+    },
+    []
+  );
 
   return (
     <>
@@ -26,7 +74,11 @@ export default function FloatingNavbar() {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-5xl rounded-2xl glass-panel shadow-lg border border-slate-200/50 dark:border-slate-800/40 px-4 md:px-6 py-2 flex items-center justify-between"
+        className={`fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-5xl rounded-2xl px-4 md:px-6 py-2 flex items-center justify-between transition-all duration-300 ${
+          scrolled
+            ? "glass-panel shadow-lg border border-slate-200/60 dark:border-slate-800/50 backdrop-blur-xl"
+            : "glass-panel shadow-md border border-slate-200/40 dark:border-slate-800/30 backdrop-blur-md"
+        }`}
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
@@ -45,17 +97,33 @@ export default function FloatingNavbar() {
           </div>
         </Link>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-blue dark:hover:text-brand-purple-light transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex items-center gap-1">
+          {NAV_LINKS.map((link) => {
+            const sectionId = link.href.replace("#", "");
+            const isActive  = activeSection === sectionId;
+            return (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={(e) => handleNavClick(e, link.href)}
+                className={`relative px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors duration-200 ${
+                  isActive
+                    ? "text-brand-blue dark:text-brand-purple"
+                    : "text-slate-600 dark:text-slate-300 hover:text-brand-blue dark:hover:text-brand-purple"
+                }`}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="navActiveIndicator"
+                    className="absolute inset-0 rounded-xl bg-brand-blue/8 dark:bg-brand-purple/10 border border-brand-blue/20 dark:border-brand-purple/20"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{link.label}</span>
+              </a>
+            );
+          })}
         </div>
 
         {/* Action Controls */}
@@ -83,10 +151,10 @@ export default function FloatingNavbar() {
           </Link>
         </div>
 
-        {/* Mobile controls */}
+        {/* Mobile Controls */}
         <div className="flex md:hidden items-center gap-2">
           <ThemeSwitcher />
-          
+
           <button
             onClick={() => setIsCommandOpen(true)}
             className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
@@ -113,17 +181,25 @@ export default function FloatingNavbar() {
             exit={{ opacity: 0, y: -20 }}
             className="fixed top-20 left-1/2 -translate-x-1/2 z-39 w-[95%] rounded-2xl glass-panel shadow-xl border border-slate-200/50 dark:border-slate-800/40 p-5 md:hidden flex flex-col gap-4"
           >
-            <div className="flex flex-col gap-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-base font-semibold text-slate-700 dark:text-slate-200 hover:text-brand-blue transition-colors px-2 py-1.5 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50"
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div className="flex flex-col gap-1">
+              {NAV_LINKS.map((link) => {
+                const sectionId = link.href.replace("#", "");
+                const isActive  = activeSection === sectionId;
+                return (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={(e) => handleNavClick(e, link.href)}
+                    className={`text-base font-semibold transition-colors px-3 py-2 rounded-xl ${
+                      isActive
+                        ? "text-brand-blue dark:text-brand-purple bg-brand-blue/8 dark:bg-brand-purple/10"
+                        : "text-slate-700 dark:text-slate-200 hover:text-brand-blue hover:bg-slate-100/50 dark:hover:bg-slate-800/50"
+                    }`}
+                  >
+                    {link.label}
+                  </a>
+                );
+              })}
             </div>
 
             <hr className="border-slate-200 dark:border-slate-800" />

@@ -10,9 +10,19 @@ export interface DecodedToken {
 }
 
 /**
+ * JWT payload structure for local token signing.
+ */
+interface JwtPayload {
+  uid: string;
+  email: string;
+  role: string;
+  [key: string]: string | number | boolean;
+}
+
+/**
  * Signs a local JWT token using HMAC-SHA256 for local dev fallback.
  */
-export function signLocalToken(payload: any, expiresIn: number = 86400): string {
+export function signLocalToken(payload: JwtPayload, expiresIn: number = 86400): string {
   const header = { alg: "HS256", typ: "JWT" };
   const exp = Math.floor(Date.now() / 1000) + expiresIn;
   const fullPayload = { ...payload, exp };
@@ -54,7 +64,7 @@ export function verifyLocalToken(token: string): DecodedToken | null {
       email: payload.email || "",
       role: payload.role || "USER",
     };
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -62,12 +72,12 @@ export function verifyLocalToken(token: string): DecodedToken | null {
 /**
  * Decodes a JWT payload without verifying its signature.
  */
-export function decodeJwtWithoutVerification(token: string): any {
+export function decodeJwtWithoutVerification(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split(".");
     if (parts.length < 2) return null;
-    return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
-  } catch (e) {
+    return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8")) as Record<string, unknown>;
+  } catch {
     return null;
   }
 }
@@ -94,15 +104,16 @@ export async function verifyAuthToken(request: Request): Promise<DecodedToken | 
         return null;
       }
 
-      if (decoded.exp && Date.now() / 1000 > decoded.exp) {
+      const exp = typeof decoded.exp === "number" ? decoded.exp : null;
+      if (exp && Date.now() / 1000 > exp) {
         console.warn("Security warning: Firebase token has expired");
         return null;
       }
 
       return {
-        uid: decoded.user_id || decoded.sub,
-        email: decoded.email || "",
-        role: decoded.role || "USER",
+        uid: String(decoded.user_id || decoded.sub || ""),
+        email: String(decoded.email || ""),
+        role: String(decoded.role || "USER"),
       };
     }
 
