@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -22,7 +22,9 @@ import {
   LogOut,
   Info,
   TrendingUp,
-  Trash2
+  Trash2,
+  Grid3X3,
+  ChevronDown
 } from "lucide-react";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import CommandPalette from "@/components/CommandPalette";
@@ -35,6 +37,7 @@ interface SidebarItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  category: string;
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -57,22 +60,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: 1, text: "Time for your scheduled breathing exercise", time: "10m ago", read: false },
     { id: 2, text: "Your deep sleep was 14% higher than last week", time: "2h ago", read: false },
     { id: 3, text: "Don't forget to log your water intake today", time: "5h ago", read: true },
   ]);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   const menuItems: SidebarItem[] = [
-    { name: "Overview", href: "/dashboard", icon: LayoutDashboard, color: "text-brand-blue" },
-    { name: "AI Companion", href: "/dashboard/ai-companion", icon: Sparkles, color: "text-brand-purple" },
-    { name: "Mental Wellness", href: "/dashboard/mental-wellness", icon: Brain, color: "text-brand-purple" },
-    { name: "Women's Wellness", href: "/dashboard/womens-wellness", icon: Heart, color: "text-rose-500" },
-    { name: "Men's Wellness", href: "/dashboard/mens-wellness", icon: Flame, color: "text-amber-500" },
-    { name: "Nutrition & Water", href: "/dashboard/nutrition", icon: Utensils, color: "text-emerald-500" },
-    { name: "Fitness & Activity", href: "/dashboard/fitness", icon: Activity, color: "text-cyan-500" },
-    { name: "Predictive Health", href: "/dashboard/predictions", icon: TrendingUp, color: "text-indigo-500" },
-    { name: "Emergency SOS", href: "/dashboard/emergency", icon: ShieldAlert, color: "text-red-500 animate-pulse" },
+    { name: "Overview", href: "/dashboard", icon: LayoutDashboard, color: "text-brand-blue", category: "Core" },
+    { name: "AI Companion", href: "/dashboard/ai-companion", icon: Sparkles, color: "text-brand-purple", category: "Core" },
+    { name: "Mental Wellness", href: "/dashboard/mental-wellness", icon: Brain, color: "text-violet-500", category: "Wellness" },
+    { name: "Women's Wellness", href: "/dashboard/womens-wellness", icon: Heart, color: "text-rose-500", category: "Wellness" },
+    { name: "Men's Wellness", href: "/dashboard/mens-wellness", icon: Flame, color: "text-amber-500", category: "Wellness" },
+    { name: "Nutrition & Water", href: "/dashboard/nutrition", icon: Utensils, color: "text-emerald-500", category: "Wellness" },
+    { name: "Fitness & Activity", href: "/dashboard/fitness", icon: Activity, color: "text-cyan-500", category: "Wellness" },
+    { name: "Predictive Health", href: "/dashboard/predictions", icon: TrendingUp, color: "text-indigo-500", category: "Analytics" },
+    { name: "Emergency SOS", href: "/dashboard/emergency", icon: ShieldAlert, color: "text-red-500", category: "Safety" },
   ];
 
   const handleToggleCollapse = () => {
@@ -84,6 +93,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const notifRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    if (isNotificationsOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isNotificationsOpen]);
+
+  // Get current page and mobile nav items
+  const currentPage = menuItems.find(item => pathname === item.href) || menuItems[0];
+  const mobileNavItems = menuItems.slice(0, 4);
 
   if (isLoading) {
     return (
@@ -144,39 +170,79 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Menu Navigation */}
-        <nav className="flex-1 py-6 px-3 space-y-1.5 overflow-y-auto no-scrollbar">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+        <nav className="flex-1 py-5 px-3 overflow-y-auto no-scrollbar space-y-5">
+          {["Core", "Wellness", "Analytics", "Safety"].map((category) => {
+            const items = menuItems.filter((i) => i.category === category);
+            if (items.length === 0) return null;
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative ${
-                  isActive
-                    ? "bg-brand-blue/10 dark:bg-brand-purple/20 text-brand-blue dark:text-brand-purple-light border-l-2 border-brand-blue dark:border-brand-purple pl-2.5"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/40"
-                }`}
-              >
-                {item.name === "Women's Wellness" ? (
-                  <img
-                    src="/womens-logo.png"
-                    alt="Women's Wellness"
-                    className="h-5 w-5 shrink-0 rounded object-cover"
-                  />
-                ) : (
-                  <Icon className={`h-5 w-5 shrink-0 ${item.color}`} />
-                )}
+              <div key={category}>
                 {!isCollapsed && (
-                  <motion.span
+                  <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500"
                   >
-                    {item.name}
-                  </motion.span>
+                    {category}
+                  </motion.p>
                 )}
-              </Link>
+                <div className="space-y-0.5">
+                  {items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+                    return (
+                      <div key={item.name} className="relative group/item">
+                        <Link
+                          href={item.href}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative ${
+                            isActive
+                              ? "bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 dark:from-brand-purple/20 dark:to-brand-purple/5 text-brand-blue dark:text-brand-purple-light shadow-sm"
+                              : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40"
+                          }`}
+                        >
+                          {isActive && !isCollapsed && (
+                            <motion.div
+                              layoutId="activeIndicator"
+                              className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-gradient-to-b from-brand-blue to-brand-purple"
+                              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            />
+                          )}
+                          <div className="relative shrink-0 flex items-center justify-center">
+                            {item.name === "Women's Wellness" ? (
+                              <img src="/womens-logo.png" alt="" className="h-5 w-5 rounded object-cover" />
+                            ) : (
+                              <Icon className={`h-5 w-5 ${item.color}`} />
+                            )}
+                          </div>
+                          {!isCollapsed && (
+                            <motion.span
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              className="truncate"
+                            >
+                              {item.name}
+                            </motion.span>
+                          )}
+                          {item.name === "Emergency SOS" && !isCollapsed && (
+                            <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-md bg-red-500/15 text-red-500 text-[8px] font-black uppercase tracking-wider animate-pulse">
+                              Live
+                            </span>
+                          )}
+                        </Link>
+                        {isCollapsed && (
+                          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl border border-slate-800/50 whitespace-nowrap opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 z-50 pointer-events-none">
+                            <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-l border-t border-slate-800/50" />
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-3.5 w-3.5 ${item.color}`} />
+                              {item.name}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
@@ -231,17 +297,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         
         {/* HEADER */}
-        <header className="h-16 flex items-center justify-between px-4 md:px-6 bg-white/40 dark:bg-slate-900/20 border-b border-slate-200/50 dark:border-slate-800/40 backdrop-blur-md z-20 select-none">
-          <div className="flex items-center gap-4">
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 bg-white/50 dark:bg-slate-900/30 border-b border-slate-200/50 dark:border-slate-800/40 backdrop-blur-md z-20 select-none">
+          <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            {/* Current page indicator (mobile) */}
+            <div className="md:hidden flex items-center gap-2">
+              {(() => {
+                const PageIcon = currentPage.icon;
+                return (
+                  <>
+                    {currentPage.name === "Women's Wellness" ? (
+                      <img src="/womens-logo.png" alt="" className="h-5 w-5 rounded object-cover" />
+                    ) : (
+                      <PageIcon className={`h-5 w-5 ${currentPage.color}`} />
+                    )}
+                    <span className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[140px]">
+                      {currentPage.name}
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
             {/* Command Palette Trigger */}
             <button
               onClick={() => setIsCommandOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/40 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all text-xs w-[180px] sm:w-[260px] text-left shadow-sm"
+              className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-950/40 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 transition-all text-xs w-[200px] lg:w-[280px] text-left shadow-sm"
             >
               <Search className="h-4 w-4 shrink-0" />
-              <span className="truncate flex-1">Search dashboard (Ctrl K)</span>
-              <kbd className="hidden sm:inline-block text-[9px] font-semibold bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200/60 dark:border-slate-700">
-                Ctrl K
+              <span className="truncate flex-1">Search or type a command...</span>
+              <kbd className="hidden lg:inline-flex items-center gap-0.5 text-[9px] font-semibold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200/60 dark:border-slate-700">
+                <span>{'\u2318'}</span>K
               </kbd>
             </button>
           </div>
@@ -249,11 +341,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
 
-            {/* Notifications Trigger */}
-            <div className="relative">
+            {/* Notifications */}
+            <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all relative shadow-sm"
+                className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all relative shadow-sm"
                 aria-label="Notifications"
               >
                 <Bell className="h-5 w-5" />
@@ -261,58 +353,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand-purple ring-2 ring-white dark:ring-slate-950 animate-pulse" />
                 )}
               </button>
-
-              {/* Notifications dropdown panel */}
               <AnimatePresence>
                 {isNotificationsOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-80 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xl z-50 text-left"
-                    >
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 mb-2">
-                        <span className="text-sm font-bold text-slate-800 dark:text-white">Notifications</span>
-                        {unreadCount > 0 && (
-                          <button
-                            onClick={markAllRead}
-                            className="text-[10px] font-bold text-brand-blue dark:text-brand-purple hover:underline"
-                          >
-                            Mark all read
-                          </button>
-                        )}
-                      </div>
-                      <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
-                        {notifications.map((notif) => (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xl z-50 text-left"
+                  >
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-3">
+                      <span className="text-sm font-bold text-slate-800 dark:text-white">Notifications</span>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="text-[10px] font-bold text-brand-blue hover:text-brand-purple uppercase tracking-wider transition-colors"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
+                      {notifications.length === 0 ? (
+                        <p className="text-xs text-slate-400 text-center py-4 font-medium">All caught up! 🎉</p>
+                      ) : (
+                        notifications.map((notif) => (
                           <div
                             key={notif.id}
-                            className={`p-2.5 rounded-xl border transition-colors ${
+                            className={`p-2.5 rounded-xl border transition-all ${
                               notif.read
-                                ? "bg-slate-50/50 dark:bg-slate-950/20 border-transparent"
-                                : "bg-brand-blue/5 dark:bg-brand-purple/10 border-slate-100 dark:border-slate-800"
+                                ? "bg-slate-50/50 dark:bg-slate-950/20 border-transparent opacity-60"
+                                : "bg-gradient-to-r from-brand-blue/5 to-brand-purple/5 dark:from-brand-purple/10 dark:to-brand-purple/5 border-slate-100 dark:border-slate-800"
                             }`}
                           >
-                            <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+                            <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
                               {notif.text}
                             </p>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase mt-1 block">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase mt-1.5 block tracking-wider">
                               {notif.time}
                             </span>
                           </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  </>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
                 )}
               </AnimatePresence>
             </div>
-            
-            {/* Quick Profile Info (only on mobile) */}
-            <div className="h-9 w-9 rounded-xl bg-brand-blue text-white flex items-center justify-center font-bold text-sm shadow md:hidden">
-              U
+            {/* Quick avatar (mobile) */}
+            <div className="md:hidden h-9 w-9 rounded-xl bg-gradient-to-br from-brand-blue to-brand-purple text-white flex items-center justify-center font-bold text-sm shadow shrink-0">
+              {(user?.profile?.name || user?.name || "U")[0].toUpperCase()}
             </div>
           </div>
         </header>
