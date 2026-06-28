@@ -14,6 +14,13 @@ schema = schema.replace(
 );
 writeFileSync(schemaPath, schema);
 
-console.log(`[setup-db] DATABASE_URL detected as: ${isPostgres ? "PostgreSQL" : "SQLite"}`);
-console.log(`[setup-db] Set Prisma schema provider to: ${provider}`);
+console.log(`[setup-db] DATABASE_URL: ${isPostgres ? "PostgreSQL ✓" : "SQLite (local)"}`);
+console.log(`[setup-db] Schema provider set to: ${provider}`);
+
 execSync("npx prisma generate", { stdio: "inherit" });
+
+if (isPostgres) {
+  console.log("[setup-db] Pushing schema to PostgreSQL (creates tables if missing)...");
+  execSync("npx prisma db push --accept-data-loss", { stdio: "inherit" });
+  console.log("[setup-db] PostgreSQL schema sync complete ✓");
+}
