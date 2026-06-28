@@ -2,13 +2,13 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  Heart, 
-  ArrowRight, 
-  ArrowLeft, 
-  Sparkles, 
-  Scale, 
-  Ruler, 
+import {
+  Heart,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  Scale,
+  Ruler,
   Calendar,
   Sparkle,
   Check
@@ -109,19 +109,17 @@ export default function OnboardingPage() {
                     className="flex flex-col items-center gap-1.5 group"
                   >
                     <div
-                      className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-extrabold transition-all border-2 ${
-                        isActive
-                          ? "bg-gradient-to-tr from-brand-blue to-brand-purple border-transparent text-white scale-110 shadow-lg shadow-brand-purple/30"
-                          : isDone
+                      className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-extrabold transition-all border-2 ${isActive
+                        ? "bg-gradient-to-tr from-brand-blue to-brand-purple border-transparent text-white scale-110 shadow-lg shadow-brand-purple/30"
+                        : isDone
                           ? "bg-brand-emerald/10 border-brand-emerald text-brand-emerald"
                           : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-white/[0.08] text-slate-400 dark:text-slate-600"
-                      }`}
+                        }`}
                     >
                       {isDone ? <Check className="h-4 w-4" /> : s}
                     </div>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider hidden sm:block transition-colors ${
-                      isActive ? "text-brand-purple dark:text-brand-purple" : isDone ? "text-brand-emerald" : "text-slate-400 dark:text-slate-600"
-                    }`}>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider hidden sm:block transition-colors ${isActive ? "text-brand-purple dark:text-brand-purple" : isDone ? "text-brand-emerald" : "text-slate-400 dark:text-slate-600"
+                      }`}>
                       {label}
                     </span>
                   </button>
@@ -197,11 +195,10 @@ export default function OnboardingPage() {
                             key={g}
                             type="button"
                             onClick={() => setGender(g)}
-                            className={`py-3 px-4 rounded-2xl border text-xs font-bold transition-all ${
-                              gender === g
-                                ? "bg-brand-blue/10 dark:bg-brand-blue/15 border-brand-blue text-brand-blue"
-                                : "bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:bg-slate-900"
-                            }`}
+                            className={`py-3 px-4 rounded-2xl border text-xs font-bold transition-all ${gender === g
+                              ? "bg-brand-blue/10 dark:bg-brand-blue/15 border-brand-blue text-brand-blue"
+                              : "bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:bg-slate-900"
+                              }`}
                           >
                             {g}
                           </button>
@@ -351,7 +348,7 @@ export default function OnboardingPage() {
                         <option value="General fitness & wellness">General fitness & wellness</option>
                         <option value="Stress reduction & sleep improvement">Stress reduction & sleep improvement</option>
                         <option value="Chronic condition management">Chronic condition management</option>
-                        <option value="Women's hormonal wellness">{"Women's hormonal wellness"}</option>
+                        <option value="Women&apos;s hormonal wellness">Women&apos;s hormonal wellness</option>
                       </select>
                     </div>
                   </motion.div>

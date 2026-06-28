@@ -1,24 +1,32 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import path from "path";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const globalForPrisma = global as unknown as { prisma: PrismaClient | undefined };
 
-const isMySQL = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith("mysql://");
+const isPostgres = (url: string) =>
+  url.startsWith("postgres://") || url.startsWith("postgresql://");
 
-let prismaInstance: PrismaClient;
+function createPrismaClient(): PrismaClient {
+  const url = process.env.DATABASE_URL || "file:./dev.db";
 
-if (isMySQL) {
-  prismaInstance = globalForPrisma.prisma || new PrismaClient();
-} else {
-  // Use absolute path to ensure the SQLite db file is always found if not using MySQL
-  const dbPath = path.resolve(process.cwd(), "dev.db");
-  const adapter = new PrismaBetterSqlite3({
-    url: `file:${dbPath}`,
-  });
-  prismaInstance = globalForPrisma.prisma || new PrismaClient({ adapter });
+  if (isPostgres(url)) {
+    // Production (Vercel/Render): PostgreSQL via the pg driver adapter.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaPg } = require("@prisma/adapter-pg");
+    const adapter = new PrismaPg({ connectionString: url });
+    return new PrismaClient({ adapter });
+  }
+
+  // Local development: SQLite via better-sqlite3.
+  // Use an absolute path so the file is found regardless of cwd.
+  const relative = url.startsWith("file:") ? url.slice("file:".length) : url;
+  const dbPath = path.resolve(process.cwd(), relative);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+  const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
+  return new PrismaClient({ adapter });
 }
 
-export const prisma = prismaInstance;
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

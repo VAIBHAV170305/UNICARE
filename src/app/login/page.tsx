@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
-import { Heart, Mail, Lock, Eye, EyeOff, ArrowRight, Activity, Sparkles } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 
@@ -104,9 +105,11 @@ export default function LoginPage() {
             transition={{ type: "spring", stiffness: 100 }}
             className="mb-4"
           >
-            <img
+            <Image
               src="/logo.png"
               alt="UniCare Logo"
+              width={56}
+              height={56}
               className="h-14 w-14 rounded-2xl shadow-lg shadow-brand-purple/20 object-cover"
             />
           </motion.div>

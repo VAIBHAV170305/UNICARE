@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { 
   Heart, 
@@ -400,9 +401,11 @@ export default function LandingPage() {
                     <div className="absolute inset-0 bg-gradient-to-tr from-brand-blue/5 to-brand-purple/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
                     <div className={`inline-flex p-3 rounded-xl border ${feat.color} mb-4 group-hover:scale-110 transition-transform`}>
                       {feat.title === "Women's Wellness" ? (
-                        <img
+                        <Image
                           src="/womens-logo.png"
                           alt="Women's Wellness"
+                          width={20}
+                          height={20}
                           className="h-5 w-5 rounded object-cover"
                         />
                       ) : (

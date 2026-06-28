@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Search, Menu, X } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 import CommandPalette from "./CommandPalette";
@@ -82,9 +83,11 @@ export default function FloatingNavbar() {
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <img
+          <Image
             src="/logo.png"
             alt="UniCare Logo"
+            width={36}
+            height={36}
             className="h-9 w-9 rounded-xl shadow-md shadow-brand-blue/20 object-cover"
           />
           <div>

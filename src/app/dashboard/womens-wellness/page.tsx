@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { 
   Heart, 
   Calendar as CalIcon, 
@@ -73,9 +74,11 @@ export default function WomensWellness() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200/40 dark:border-slate-800/40 pb-6 text-left">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight flex items-center gap-2.5">
-            <img
+            <Image
               src="/womens-logo.png"
               alt="Women's Wellness Logo"
+              width={28}
+              height={28}
               className="h-7 w-7 rounded-lg object-cover"
             /> Women&rsquo;s Wellness Workspace
           </h1>
