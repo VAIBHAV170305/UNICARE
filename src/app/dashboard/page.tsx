@@ -38,6 +38,28 @@ export default function DashboardOverview() {
   const [waterIntake, setWaterIntake] = useState(1500); // in ml
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [liveDateTime, setLiveDateTime] = useState<Date | null>(null);
+  const [accentTheme, setAccentTheme] = useState("indigo");
+  const [loggedSleep, setLoggedSleep] = useState("8.2");
+
+  const changeAccent = (accent: string) => {
+    setAccentTheme(accent);
+    localStorage.setItem("unicare_accent_theme", accent);
+    
+    const root = document.documentElement;
+    if (accent === "indigo") {
+      root.style.setProperty("--color-brand-blue", "#3b82f6");
+      root.style.setProperty("--color-brand-purple", "#6366f1");
+    } else if (accent === "emerald") {
+      root.style.setProperty("--color-brand-blue", "#059669");
+      root.style.setProperty("--color-brand-purple", "#10b981");
+    } else if (accent === "purple") {
+      root.style.setProperty("--color-brand-blue", "#8b5cf6");
+      root.style.setProperty("--color-brand-purple", "#d946ef");
+    } else if (accent === "coral") {
+      root.style.setProperty("--color-brand-blue", "#f97316");
+      root.style.setProperty("--color-brand-purple", "#ec4899");
+    }
+  };
 
   // Live clock — updates every second
   useEffect(() => {
@@ -81,6 +103,12 @@ export default function DashboardOverview() {
     if (consented !== "true") {
       setShowConsentModal(true);
     }
+
+    const savedTheme = localStorage.getItem("unicare_accent_theme") || "indigo";
+    changeAccent(savedTheme);
+
+    const sleepVal = localStorage.getItem("unicare_sleep_hours");
+    if (sleepVal) setLoggedSleep(sleepVal);
   }, []);
 
   const handleAgreeConsent = () => {
@@ -175,6 +203,36 @@ export default function DashboardOverview() {
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm text-xs font-bold text-slate-600 dark:text-slate-300 font-mono tracking-tight">
           <Clock className="h-4 w-4 text-brand-blue" />
           <span>{formattedTime}</span>
+        </div>
+      </div>
+
+      {/* Accent Theme Customizer */}
+      <div className="p-4 rounded-3xl glass-card border border-slate-200/50 dark:border-slate-800/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left">
+        <div>
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Personalize Experience</span>
+          <h4 className="text-xs font-black text-slate-800 dark:text-white mt-0.5">Select Dashboard Color Accent</h4>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: "indigo", name: "Indigo", color: "bg-[#3b82f6]" },
+            { id: "emerald", name: "Emerald", color: "bg-[#059669]" },
+            { id: "purple", name: "Purple", color: "bg-[#8b5cf6]" },
+            { id: "coral", name: "Coral", color: "bg-[#f97316]" }
+          ].map((theme) => (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => changeAccent(theme.id)}
+              className={`px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                accentTheme === theme.id 
+                  ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 shadow-sm"
+                  : "bg-transparent border-transparent text-slate-500 hover:text-slate-850 dark:hover:text-slate-200"
+              }`}
+            >
+              <div className={`h-2.5 w-2.5 rounded-full ${theme.color}`} />
+              <span>{theme.name}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -343,22 +401,25 @@ export default function DashboardOverview() {
         </div>
 
         {/* Sleep Widget */}
-        <div className="p-5 rounded-3xl glass-card border border-slate-200/60 dark:border-slate-900/60 text-left flex flex-col justify-between h-44">
+        <Link 
+          href="/dashboard/sleep-tracker" 
+          className="p-5 rounded-3xl glass-card border border-slate-200/60 dark:border-slate-900/60 text-left flex flex-col justify-between h-44 hover:scale-[1.02] hover:border-brand-purple/50 transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-slate-400 uppercase">Sleep duration</span>
-            <Moon className="h-4.5 w-4.5 text-indigo-500" />
+            <Moon className="h-4.5 w-4.5 text-indigo-500 group-hover:animate-bounce" />
           </div>
           <div>
             <p className="text-2xl font-black text-slate-800 dark:text-white">
-              8h 12m
+              {loggedSleep} <span className="text-xs font-semibold text-slate-400">hours</span>
             </p>
-            <p className="text-[10px] text-brand-emerald mt-1 font-bold">Deep sleep: 2h 14m (27%)</p>
+            <p className="text-[10px] text-brand-emerald mt-1 font-bold">Circadian Status: Logged</p>
           </div>
           <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950/40 p-2 rounded-xl border border-slate-200/10 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-            <span>Efficiency: 92%</span>
-            <span>Resting HR: 54 bpm</span>
+            <span>Circadian Rhythm Timeline</span>
+            <ChevronRight className="h-3.5 w-3.5 text-brand-purple" />
           </div>
-        </div>
+        </Link>
 
         {/* Exercise Tracker */}
         <div className="p-5 rounded-3xl glass-card border border-slate-200/60 dark:border-slate-900/60 text-left flex flex-col justify-between h-44">

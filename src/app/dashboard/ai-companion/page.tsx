@@ -16,11 +16,14 @@ import {
   Moon,
   Volume2,
   Settings,
-  X
+  X,
+  Camera,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import VoiceAssistant from "@/components/VoiceAssistant";
 import { useAuth } from "@/context/AuthContext";
+import confetti from "canvas-confetti";
 
 interface Message {
   id: string;
@@ -51,6 +54,18 @@ export default function AICompanion() {
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [showKeyModal, setShowKeyModal] = useState(false);
+
+  // Meal scanner states
+  const [showMealScanner, setShowMealScanner] = useState(false);
+  const [scanningStatus, setScanningStatus] = useState<"idle" | "scanning" | "done">("idle");
+  const [selectedFood, setSelectedFood] = useState<string | null>(null);
+  const [scannedNutrition, setScannedNutrition] = useState<{
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+  } | null>(null);
 
   // Load API Key on mount
   useEffect(() => {
@@ -264,6 +279,19 @@ export default function AICompanion() {
             </button>
           </div>
 
+          <button
+            onClick={() => {
+              setShowMealScanner(true);
+              setScanningStatus("idle");
+              setSelectedFood(null);
+              setScannedNutrition(null);
+            }}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-blue/15 to-brand-purple/15 hover:from-brand-blue/20 hover:to-brand-purple/20 border border-brand-purple/25 text-xs font-bold text-slate-800 dark:text-white transition-all shadow-sm"
+          >
+            <Camera className="h-4 w-4 text-brand-purple" />
+            <span>AI Meal Scanner</span>
+          </button>
+
           <div className="space-y-3">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 px-1">
               <History className="h-3.5 w-3.5" /> Recent logs
@@ -308,16 +336,31 @@ export default function AICompanion() {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowKeyModal(true)}
-            className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98] ${
-              apiKey 
-                ? "bg-brand-emerald/10 border-brand-emerald/25 text-brand-emerald" 
-                : "bg-amber-500/10 border-amber-500/25 text-amber-500"
-            }`}
-          >
-            {apiKey ? "AI Active" : "Demo Mode (Mock)"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setShowMealScanner(true);
+                setScanningStatus("idle");
+                setSelectedFood(null);
+                setScannedNutrition(null);
+              }}
+              className="lg:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border border-slate-200/40 dark:border-slate-800"
+              title="AI Meal Scanner"
+            >
+              <Camera className="h-4 w-4 text-brand-purple" />
+            </button>
+
+            <button
+              onClick={() => setShowKeyModal(true)}
+              className={`px-3 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                apiKey 
+                  ? "bg-brand-emerald/10 border-brand-emerald/25 text-brand-emerald" 
+                  : "bg-amber-500/10 border-amber-500/25 text-amber-500"
+              }`}
+            >
+              {apiKey ? "AI Active" : "Demo Mode (Mock)"}
+            </button>
+          </div>
         </div>
 
         {/* Messages List */}
@@ -420,18 +463,36 @@ export default function AICompanion() {
               {isVoiceActive ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
             </button>
 
-            {/* Input box */}
-            <input
-              type="text"
-              value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSendMessage(inputVal);
-              }}
-              placeholder={isVoiceActive ? "Listening for health query..." : "Ask UniCare AI companion anything..."}
-              disabled={isVoiceActive}
-              className="flex-1 bg-white/50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 px-4 outline-none text-slate-950 dark:text-white text-xs font-semibold placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-blue/50 dark:focus:border-brand-purple/50 shadow-inner"
-            />
+            {/* Input box / Soundwave visualizer */}
+            {isVoiceActive ? (
+              <div className="flex-1 h-11 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center justify-between px-4">
+                <span className="text-xs font-black text-red-500 animate-pulse uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-ping" />
+                  Voice Assistant Listening...
+                </span>
+                <div className="flex items-center gap-1.5 h-6">
+                  {[0.2, 0.5, 0.3, 0.7, 0.4, 0.6, 0.3, 0.8].map((delay, index) => (
+                    <motion.div
+                      key={index}
+                      animate={{ height: [8, 22, 8] }}
+                      transition={{ duration: 0.7, repeat: Infinity, delay: delay }}
+                      className="w-1 rounded-full bg-red-500"
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSendMessage(inputVal);
+                }}
+                placeholder="Ask UniCare AI companion anything..."
+                className="flex-1 bg-white/50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 px-4 outline-none text-slate-950 dark:text-white text-xs font-semibold placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-blue/50 dark:focus:border-brand-purple/50 shadow-inner"
+              />
+            )}
 
             {/* Send button */}
             <button
@@ -462,8 +523,9 @@ export default function AICompanion() {
 
       </div>
 
-      {/* API Key Modal */}
+      {/* Modals & Dialogs */}
       <AnimatePresence>
+        {/* Gemini API Key Modal */}
         {showKeyModal && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -492,7 +554,7 @@ export default function AICompanion() {
 
               <div className="space-y-3">
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  To get real-time, complete AI Healthcare responses, paste your Google Gemini API key below. Your key is stored locally in your browser and is never shared.
+                  To get real-time, complete AI Healthcare responses, paste your Google Gemini API key below. Your key is stored locally in your browser.
                 </p>
 
                 <div className="space-y-1.5">
@@ -528,6 +590,159 @@ export default function AICompanion() {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Meal Scanner Modal */}
+        {showMealScanner && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl w-full max-w-lg shadow-2xl space-y-4 text-left"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800/60">
+                <h3 className="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Camera className="h-4.5 w-4.5 text-brand-purple" />
+                  AI Nutrition Scanner Simulation
+                </h3>
+                <button
+                  onClick={() => setShowMealScanner(false)}
+                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {scanningStatus === "idle" && (
+                <div className="space-y-4">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+                    Select a meal to place under the AI Computer Vision Lens:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { name: "Avocado Sourdough Toast", desc: "Healthy fats & seeds", calories: 320, protein: 8, carbs: 24, fats: 15 },
+                      { name: "Mediterranean Salmon Bowl", desc: "High protein, omega acids", calories: 520, protein: 42, carbs: 35, fats: 18 },
+                      { name: "Blueberry Oats Pancakes", desc: "Complex carbs & fruit", calories: 380, protein: 20, carbs: 46, fats: 6 }
+                    ].map((food) => (
+                      <button
+                        key={food.name}
+                        onClick={() => {
+                          setSelectedFood(food.name);
+                          setScanningStatus("scanning");
+                          setTimeout(() => {
+                            setScanningStatus("done");
+                            setScannedNutrition(food);
+                          }, 1800);
+                        }}
+                        className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all text-left flex flex-col justify-between h-32"
+                      >
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-black text-slate-800 dark:text-white">{food.name}</h4>
+                          <p className="text-[10px] text-slate-400 font-semibold leading-normal">{food.desc}</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-brand-purple bg-brand-purple/10 border border-brand-purple/20 px-2 py-0.5 rounded-full w-max">
+                          {food.calories} kcal
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {scanningStatus === "scanning" && (
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="relative h-40 w-full sm:w-80 rounded-2xl border-2 border-dashed border-brand-purple/40 bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center overflow-hidden">
+                    <Loader2 className="h-8 w-8 text-brand-purple animate-spin" />
+                    <motion.div
+                      animate={{ y: [-70, 70, -70] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-brand-purple to-transparent shadow-lg"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-purple">Analyzing biological composition...</span>
+                    <p className="text-xs text-slate-400 font-semibold mt-1">Simulating computer vision neural parser...</p>
+                  </div>
+                </div>
+              )}
+
+              {scanningStatus === "done" && scannedNutrition && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-brand-emerald/5 border border-brand-emerald/20 flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Scanning Complete</span>
+                      <h4 className="text-sm font-black text-slate-800 dark:text-white mt-0.5">{scannedNutrition.name}</h4>
+                    </div>
+                    <Check className="h-5 w-5 text-brand-emerald animate-pulse" />
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2.5">
+                    {[
+                      { label: "Calories", value: `${scannedNutrition.calories} kcal`, color: "text-brand-purple bg-brand-purple/10" },
+                      { label: "Protein", value: `${scannedNutrition.protein}g`, color: "text-brand-blue bg-brand-blue/10" },
+                      { label: "Carbs", value: `${scannedNutrition.carbs}g`, color: "text-brand-emerald bg-brand-emerald/10" },
+                      { label: "Fats", value: `${scannedNutrition.fats}g`, color: "text-amber-500 bg-amber-500/10" }
+                    ].map((macro) => (
+                      <div key={macro.label} className={`p-3 rounded-2xl text-center ${macro.color}`}>
+                        <span className="text-[8px] font-black uppercase text-slate-500 tracking-wider block mb-1">{macro.label}</span>
+                        <span className="text-xs font-black block">{macro.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2.5 justify-end pt-2">
+                    <button
+                      onClick={() => setScanningStatus("idle")}
+                      className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 text-[10px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white uppercase transition-all"
+                    >
+                      Scan Another
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Sim logging
+                        const loggedCalories = parseInt(localStorage.getItem("unicare_calories_logged") || "0");
+                        localStorage.setItem("unicare_calories_logged", (loggedCalories + scannedNutrition.calories).toString());
+
+                        // Send simulated companion response
+                        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const logMsg: Message = {
+                          id: `msg-${Date.now()}-user`,
+                          sender: "user",
+                          text: `Logged meal via Image Scanner: ${scannedNutrition.name}`,
+                          timestamp: timeStr
+                        };
+                        const aiMsg: Message = {
+                          id: `msg-${Date.now()}-ai`,
+                          sender: "ai",
+                          text: `Successfully logged your meal: **${scannedNutrition.name}**!\n\n- Total Calories: **${scannedNutrition.calories} kcal**\n- Protein: **${scannedNutrition.protein}g**\n- Carbs: **${scannedNutrition.carbs}g**\n- Fats: **${scannedNutrition.fats}g**\n\n*Companion Advice:* This supports your active biomarkers. Make sure to drink water to ease digestion!`,
+                          timestamp: timeStr
+                        };
+                        setMessages(prev => [...prev, logMsg, aiMsg]);
+                        setShowMealScanner(false);
+
+                        // Confetti
+                        confetti({
+                          particleCount: 80,
+                          spread: 60,
+                          origin: { y: 0.8 },
+                          colors: ["#10b981", "#3b82f6"]
+                        });
+                      }}
+                      className="px-4 py-2 rounded-xl bg-brand-emerald hover:bg-emerald-600 text-[10px] font-bold text-white uppercase transition-all shadow shadow-brand-emerald/20"
+                    >
+                      Log Meal to Tracker
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

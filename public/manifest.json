@@ -1,0 +1,19 @@
+{
+  "name": "UniCare — AI Healthcare Companion",
+  "short_name": "UniCare",
+  "description": "One AI companion for every body, at every stage of life.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "shortcuts": [
+    { "name": "AI Companion", "url": "/dashboard/ai-companion", "description": "Open AI Health Chat" },
+    { "name": "Emergency SOS", "url": "/dashboard/emergency", "description": "Emergency Dashboard" }
+  ]
+}

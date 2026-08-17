@@ -30,16 +30,49 @@ export default function OnboardingPage() {
   const [allergies, setAllergies] = useState("None");
   const [healthGoals, setHealthGoals] = useState("Cardiovascular endurance");
 
-  const totalSteps = 3;
+  // Expanded lifestyle questionnaire states
+  const [sleepHours, setSleepHours] = useState(7);
+  const [stressLevel, setStressLevel] = useState("Moderate");
+  const [dietType, setDietType] = useState("Balanced");
+  const [lifestyle, setLifestyle] = useState("Active");
+
+  const totalSteps = 4;
 
   const nextStep = () => { if (step < totalSteps) setStep(step + 1); };
   const prevStep = () => { if (step > 1) setStep(step - 1); };
+
+  const calculateHealthScore = () => {
+    let score = 85;
+    const bmi = weight / ((height / 100) ** 2);
+    if (bmi < 18.5 || bmi > 25) score -= 8;
+    if (bmi > 30) score -= 7;
+    if (sleepHours < 6) score -= 10;
+    else if (sleepHours >= 7 && sleepHours <= 8) score += 5;
+    if (stressLevel === "High") score -= 12;
+    else if (stressLevel === "Low") score += 5;
+    if (lifestyle === "Sedentary") score -= 10;
+    else if (lifestyle === "Highly Active") score += 5;
+    return Math.min(Math.max(score, 40), 100);
+  };
+
+  const getCardioRisk = (bmi: number) => {
+    if (age > 45 && (stressLevel === "High" || bmi > 28)) return "Elevated";
+    if (stressLevel === "High" || bmi > 27 || age > 50) return "Moderate";
+    return "Low";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step !== totalSteps) return;
     setIsSubmitting(true);
     try {
+      // Save additional health metrics to localStorage for local retrieval
+      localStorage.setItem("unicare_sleep_hours", sleepHours.toString());
+      localStorage.setItem("unicare_stress_level", stressLevel);
+      localStorage.setItem("unicare_diet_type", dietType);
+      localStorage.setItem("unicare_lifestyle", lifestyle);
+      localStorage.setItem("unicare_health_score", calculateHealthScore().toString());
+
       await saveOnboardingProfile({ age, gender, height, weight, medicalHistory, allergies, healthGoals });
     } catch (err) {
       console.error(err);
@@ -48,7 +81,11 @@ export default function OnboardingPage() {
     }
   };
 
-  const stepLabels = ["Basic Profile", "Body Vitals", "Goals & History"];
+  const stepLabels = ["Basic Profile", "Body Vitals", "Lifestyle & Goals", "Assessment"];
+
+  const bmi = weight / ((height / 100) ** 2);
+  const healthScoreVal = calculateHealthScore();
+  const cardioRiskVal = getCardioRisk(bmi);
 
   return (
     <div className="relative min-h-screen w-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
@@ -270,23 +307,132 @@ export default function OnboardingPage() {
 
                     {/* BMI Preview */}
                     {(() => {
-                      const bmi = weight / ((height / 100) ** 2);
-                      const bmiCategory = bmi < 18.5 ? "Underweight" : bmi < 25 ? "Healthy" : bmi < 30 ? "Overweight" : "Obese";
-                      const bmiColor = bmi < 18.5 ? "text-amber-500" : bmi < 25 ? "text-brand-emerald" : bmi < 30 ? "text-orange-500" : "text-red-500";
+                      const bmiVal = weight / ((height / 100) ** 2);
+                      const bmiCategory = bmiVal < 18.5 ? "Underweight" : bmiVal < 25 ? "Healthy" : bmiVal < 30 ? "Overweight" : "Obese";
+                      const bmiColor = bmiVal < 18.5 ? "text-amber-500" : bmiVal < 25 ? "text-brand-emerald" : bmiVal < 30 ? "text-orange-500" : "text-red-500";
                       return (
                         <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/[0.06]">
                           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Est. BMI</span>
-                          <span className={`text-sm font-black ${bmiColor}`}>{bmi.toFixed(1)} — {bmiCategory}</span>
+                          <span className={`text-sm font-black ${bmiColor}`}>{bmiVal.toFixed(1)} — {bmiCategory}</span>
                         </div>
                       );
                     })()}
                   </motion.div>
                 )}
 
-                {/* ── Step 3: Clinical & Goals ── */}
+                {/* ── Step 3: Lifestyle & Goals ── */}
                 {step === 3 && (
                   <motion.div
                     key="step-3"
+                    initial={{ x: 24, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -24, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="space-y-4 max-h-[380px] overflow-y-auto pr-1 no-scrollbar"
+                  >
+                    <div>
+                      <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-brand-emerald" />
+                        Lifestyle & Goals
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Help us assess your daily habits and goals.
+                      </p>
+                    </div>
+
+                    {/* Sleep hours slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Typical Sleep</label>
+                        <span className="text-xs font-black text-brand-emerald">{sleepHours} hrs/night</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="4" max="10"
+                        value={sleepHours}
+                        onChange={(e) => setSleepHours(parseInt(e.target.value))}
+                        className="w-full h-1.5 rounded-full appearance-none bg-slate-200 dark:bg-slate-800 accent-brand-emerald cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Stress Level Select */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Stress Level</label>
+                        <select
+                          value={stressLevel}
+                          onChange={(e) => setStressLevel(e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 p-2.5 text-xs text-slate-900 dark:text-white outline-none"
+                        >
+                          <option value="Low">Low Stress</option>
+                          <option value="Moderate">Moderate Stress</option>
+                          <option value="High">High Stress</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Activity Level</label>
+                        <select
+                          value={lifestyle}
+                          onChange={(e) => setLifestyle(e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 p-2.5 text-xs text-slate-900 dark:text-white outline-none"
+                        >
+                          <option value="Sedentary">Sedentary</option>
+                          <option value="Active">Moderately Active</option>
+                          <option value="Highly Active">Highly Active</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Diet type */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Diet Style</label>
+                      <select
+                        value={dietType}
+                        onChange={(e) => setDietType(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 p-2.5 text-xs text-slate-900 dark:text-white outline-none"
+                      >
+                        <option value="Balanced">Balanced / Everything</option>
+                        <option value="High-Protein">High-Protein</option>
+                        <option value="Vegetarian">Vegetarian / Vegan</option>
+                        <option value="Keto">Keto / Low-Carb</option>
+                      </select>
+                    </div>
+
+                    {/* Medical History */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Medical History</label>
+                      <input
+                        type="text"
+                        value={medicalHistory}
+                        onChange={(e) => setMedicalHistory(e.target.value)}
+                        placeholder="e.g. Asthma, None"
+                        className="w-full rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 p-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none"
+                      />
+                    </div>
+
+                    {/* Health Goals */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Primary Health Goal</label>
+                      <select
+                        value={healthGoals}
+                        onChange={(e) => setHealthGoals(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 p-2.5 text-xs text-slate-900 dark:text-white outline-none"
+                      >
+                        <option value="Cardiovascular endurance">Cardiovascular endurance</option>
+                        <option value="Weight loss">Weight loss & toning</option>
+                        <option value="General fitness & wellness">General fitness & wellness</option>
+                        <option value="Stress reduction & sleep improvement">Stress reduction & sleep improvement</option>
+                        <option value="Chronic condition management">Chronic condition management</option>
+                      </select>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ── Step 4: Health Assessment Forecast ── */}
+                {step === 4 && (
+                  <motion.div
+                    key="step-4"
                     initial={{ x: 24, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -24, opacity: 0 }}
@@ -295,61 +441,53 @@ export default function OnboardingPage() {
                   >
                     <div>
                       <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-brand-emerald" />
-                        Goals & Clinical Background
+                        <Sparkles className="h-5 w-5 text-brand-purple" />
+                        Dynamic Health Assessment
                       </h2>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Help us understand your health history and what you want to achieve with UniCare.
+                        Here is your estimated cardiovascular & lifestyle rating.
                       </p>
                     </div>
 
-                    {/* Medical History */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                        Medical History / Pre-existing Conditions
-                      </label>
-                      <input
-                        type="text"
-                        value={medicalHistory}
-                        onChange={(e) => setMedicalHistory(e.target.value)}
-                        placeholder="e.g. Mild asthma, None"
-                        className="w-full rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 py-3.5 px-4 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 outline-none focus:border-brand-purple/60 dark:focus:border-brand-purple/50 transition-colors"
-                        required
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Health Score circle */}
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-brand-blue/5 to-brand-purple/5 border border-brand-purple/10 flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Health Index</span>
+                        <div className="relative flex items-center justify-center h-20 w-20 rounded-full border-4 border-brand-purple/20">
+                          <span className="text-2xl font-black text-slate-800 dark:text-white">{healthScoreVal}</span>
+                        </div>
+                        <span className="text-[9px] font-bold text-brand-purple mt-2">Optimal Balance</span>
+                      </div>
+
+                      {/* Cardiovascular risk rating */}
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-brand-blue/5 to-brand-emerald/5 border border-brand-emerald/10 flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cardiovascular Risk</span>
+                        <span className={`text-xl font-black ${
+                          cardioRiskVal === "Low" ? "text-brand-emerald" : cardioRiskVal === "Moderate" ? "text-amber-500" : "text-red-500"
+                        }`}>{cardioRiskVal}</span>
+                        <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-3 leading-relaxed font-semibold">
+                          {cardioRiskVal === "Low" ? "Vascular health indicators show excellent baseline resistance." : "Keep stress and screen times low to balance autonomic strain."}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Allergies */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                        Food / Drug Allergies
-                      </label>
-                      <input
-                        type="text"
-                        value={allergies}
-                        onChange={(e) => setAllergies(e.target.value)}
-                        placeholder="e.g. Peanuts, Penicillin, None"
-                        className="w-full rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 py-3.5 px-4 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 outline-none focus:border-brand-purple/60 dark:focus:border-brand-purple/50 transition-colors"
-                        required
-                      />
-                    </div>
-
-                    {/* Health Goals */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                        Primary Health Goal
-                      </label>
-                      <select
-                        value={healthGoals}
-                        onChange={(e) => setHealthGoals(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-slate-950/40 py-3.5 px-4 text-sm text-slate-900 dark:text-white outline-none focus:border-brand-purple/60 dark:focus:border-brand-purple/50 appearance-none cursor-pointer transition-colors"
-                      >
-                        <option value="Cardiovascular endurance">Cardiovascular endurance</option>
-                        <option value="Weight loss">Weight loss & toning</option>
-                        <option value="General fitness & wellness">General fitness & wellness</option>
-                        <option value="Stress reduction & sleep improvement">Stress reduction & sleep improvement</option>
-                        <option value="Chronic condition management">Chronic condition management</option>
-                        <option value="Women&apos;s hormonal wellness">Women&apos;s hormonal wellness</option>
-                      </select>
+                    {/* Advice recommendations */}
+                    <div className="p-4 rounded-2xl bg-slate-100/60 dark:bg-slate-900/40 border border-slate-200/50 dark:border-white/[0.06] text-left">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Your Companion Priority Checklist</h4>
+                      <ul className="text-xs font-semibold text-slate-600 dark:text-slate-300 space-y-1.5">
+                        <li className="flex items-center gap-1.5">
+                          <div className="h-1.5 w-1.5 rounded-full bg-brand-blue" />
+                          Target sleep: {sleepHours < 7 ? "Increase sleep duration to 7.5 hrs to balance cognitive loads." : "Maintained circadian sleep intervals."}
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <div className="h-1.5 w-1.5 rounded-full bg-brand-purple" />
+                          Activity: {lifestyle === "Sedentary" ? "Add a 20-min daily walking habit to raise vascular compliance." : "Maintain current aerobic steps count."}
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <div className="h-1.5 w-1.5 rounded-full bg-brand-emerald" />
+                          Diet recommendation: Focus on {dietType} foods to support recovery.
+                        </li>
+                      </ul>
                     </div>
                   </motion.div>
                 )}

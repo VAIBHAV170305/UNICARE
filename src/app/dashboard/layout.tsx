@@ -24,7 +24,8 @@ import {
   TrendingUp,
   Trash2,
   Grid3X3,
-  ChevronDown
+  ChevronDown,
+  Moon
 } from "lucide-react";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import CommandPalette from "@/components/CommandPalette";
@@ -78,6 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Mental Wellness", href: "/dashboard/mental-wellness", icon: Brain, color: "text-violet-500", category: "Wellness" },
     { name: "Women's Wellness", href: "/dashboard/womens-wellness", icon: Heart, color: "text-rose-500", category: "Wellness" },
     { name: "Men's Wellness", href: "/dashboard/mens-wellness", icon: Flame, color: "text-amber-500", category: "Wellness" },
+    { name: "Sleep & Circadian", href: "/dashboard/sleep-tracker", icon: Moon, color: "text-indigo-400", category: "Wellness" },
     { name: "Nutrition & Water", href: "/dashboard/nutrition", icon: Utensils, color: "text-emerald-500", category: "Wellness" },
     { name: "Fitness & Activity", href: "/dashboard/fitness", icon: Activity, color: "text-cyan-500", category: "Wellness" },
     { name: "Predictive Health", href: "/dashboard/predictions", icon: TrendingUp, color: "text-indigo-500", category: "Analytics" },
