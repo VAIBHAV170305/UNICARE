@@ -4,8 +4,46 @@ import fs from "fs";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient | undefined };
 
+function initSqliteTables(db: any) {
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS "User" (
+        "id" TEXT PRIMARY KEY,
+        "email" TEXT UNIQUE NOT NULL,
+        "name" TEXT NOT NULL,
+        "password" TEXT NOT NULL,
+        "role" TEXT NOT NULL DEFAULT 'USER',
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS "Profile" (
+        "id" TEXT PRIMARY KEY,
+        "userId" TEXT UNIQUE NOT NULL,
+        "age" INTEGER NOT NULL,
+        "gender" TEXT NOT NULL,
+        "height" REAL NOT NULL,
+        "weight" REAL NOT NULL,
+        "medicalHistory" TEXT NOT NULL,
+        "allergies" TEXT NOT NULL,
+        "healthGoals" TEXT NOT NULL,
+        FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE
+      );
+      CREATE TABLE IF NOT EXISTS "AuditLog" (
+        "id" TEXT PRIMARY KEY,
+        "userId" TEXT,
+        "action" TEXT NOT NULL,
+        "details" TEXT NOT NULL,
+        "ipAddress" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch (e) {
+    console.warn("[Prisma] Failed to initialize SQLite tables:", e);
+  }
+}
+
 function createPrismaClient(): PrismaClient {
-  let url = process.env.DATABASE_URL || "file:./dev.db";
+  const url = process.env.DATABASE_URL || "file:./dev.db";
 
   // PostgreSQL
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
@@ -43,6 +81,7 @@ function createPrismaClient(): PrismaClient {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
   const db = new Database(dbFilePath);
+  initSqliteTables(db);
   const adapter = new PrismaBetterSqlite3(db);
   return new PrismaClient({ adapter });
 }
