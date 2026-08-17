@@ -15,13 +15,13 @@ function createPrismaClient(): PrismaClient {
       const adapter = new PrismaPg({ connectionString: url });
       return new PrismaClient({ adapter });
     } catch {
-      return new PrismaClient({ datasourceUrl: url });
+      return new PrismaClient({ datasources: { db: { url } } });
     }
   }
 
   // MySQL / TiDB
   if (url.startsWith("mysql://")) {
-    return new PrismaClient({ datasourceUrl: url });
+    return new PrismaClient({ datasources: { db: { url } } });
   }
 
   // SQLite (File-based)
@@ -51,7 +51,7 @@ function createPrismaClient(): PrismaClient {
     const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
     return new PrismaClient({ adapter });
   } catch {
-    return new PrismaClient({ datasourceUrl: url });
+    return new PrismaClient({ datasources: { db: { url } } });
   }
 }
 
