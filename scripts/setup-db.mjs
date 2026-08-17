@@ -1,7 +1,12 @@
 import { readFileSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 
-const url = process.env.DATABASE_URL || "file:./dev.db";
+let url = process.env.DATABASE_URL || "file:./dev.db";
+
+if (url.startsWith("mysql://") && !url.includes("sslaccept=")) {
+  url += url.includes("?") ? "&sslaccept=strict" : "?sslaccept=strict";
+  process.env.DATABASE_URL = url;
+}
 
 let provider = "sqlite";
 if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {

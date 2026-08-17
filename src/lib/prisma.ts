@@ -9,19 +9,10 @@ function createPrismaClient(): PrismaClient {
 
   // PostgreSQL
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { PrismaPg } = require("@prisma/adapter-pg");
-      const adapter = new PrismaPg({ connectionString: url });
-      return new PrismaClient({ adapter });
-    } catch {
-      return new PrismaClient({ datasources: { db: { url } } });
-    }
-  }
-
-  // MySQL / TiDB
-  if (url.startsWith("mysql://")) {
-    return new PrismaClient({ datasources: { db: { url } } });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaPg } = require("@prisma/adapter-pg");
+    const adapter = new PrismaPg({ connectionString: url });
+    return new PrismaClient({ adapter });
   }
 
   // SQLite (File-based)
@@ -43,16 +34,13 @@ function createPrismaClient(): PrismaClient {
     }
   }
 
-  try {
-    const relative = url.startsWith("file:") ? url.slice("file:".length) : url;
-    const dbPath = path.isAbsolute(relative) ? relative : path.resolve(process.cwd(), relative);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
-    const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
-    return new PrismaClient({ adapter });
-  } catch {
-    return new PrismaClient({ datasources: { db: { url } } });
-  }
+  const relative = url.startsWith("file:") ? url.slice("file:".length) : url;
+  const dbPath = path.isAbsolute(relative) ? relative : path.resolve(process.cwd(), relative);
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+  const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
+  return new PrismaClient({ adapter });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
