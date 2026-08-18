@@ -82,7 +82,7 @@ function createPrismaClient(): PrismaClient {
   const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
   const db = new Database(dbFilePath);
   initSqliteTables(db);
-  const adapter = new PrismaBetterSqlite3(db);
+  const adapter = new PrismaBetterSqlite3(db, { url: dbFilePath });
   return new PrismaClient({ adapter });
 }
 
