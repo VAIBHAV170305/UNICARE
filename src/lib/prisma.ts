@@ -7,34 +7,34 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient | undefined 
 function initSqliteTables(db: any) {
   try {
     db.exec(`
-      CREATE TABLE IF NOT EXISTS "User" (
-        "id" TEXT PRIMARY KEY,
-        "email" TEXT UNIQUE NOT NULL,
-        "name" TEXT NOT NULL,
-        "password" TEXT NOT NULL,
-        "role" TEXT NOT NULL DEFAULT 'USER',
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      CREATE TABLE IF NOT EXISTS User (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT DEFAULT 'USER',
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE TABLE IF NOT EXISTS "Profile" (
-        "id" TEXT PRIMARY KEY,
-        "userId" TEXT UNIQUE NOT NULL,
-        "age" INTEGER NOT NULL,
-        "gender" TEXT NOT NULL,
-        "height" REAL NOT NULL,
-        "weight" REAL NOT NULL,
-        "medicalHistory" TEXT NOT NULL,
-        "allergies" TEXT NOT NULL,
-        "healthGoals" TEXT NOT NULL,
-        FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE
+      CREATE TABLE IF NOT EXISTS Profile (
+        id TEXT PRIMARY KEY,
+        userId TEXT UNIQUE NOT NULL,
+        age INTEGER NOT NULL,
+        gender TEXT NOT NULL,
+        height REAL NOT NULL,
+        weight REAL NOT NULL,
+        medicalHistory TEXT NOT NULL,
+        allergies TEXT NOT NULL,
+        healthGoals TEXT NOT NULL,
+        FOREIGN KEY (userId) REFERENCES User (id) ON DELETE CASCADE
       );
-      CREATE TABLE IF NOT EXISTS "AuditLog" (
-        "id" TEXT PRIMARY KEY,
-        "userId" TEXT,
-        "action" TEXT NOT NULL,
-        "details" TEXT NOT NULL,
-        "ipAddress" TEXT,
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      CREATE TABLE IF NOT EXISTS AuditLog (
+        id TEXT PRIMARY KEY,
+        userId TEXT,
+        action TEXT NOT NULL,
+        details TEXT NOT NULL,
+        ipAddress TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
   } catch (e) {
