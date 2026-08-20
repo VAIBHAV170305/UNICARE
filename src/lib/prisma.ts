@@ -4,8 +4,11 @@ import fs from "fs";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient | undefined };
 
-function initSqliteTables(db: any) {
+function initSqliteTables(dbFilePath: string) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Database = require("better-sqlite3");
+    const db = new Database(dbFilePath);
     db.exec(`
       CREATE TABLE IF NOT EXISTS User (
         id TEXT PRIMARY KEY,
@@ -37,6 +40,7 @@ function initSqliteTables(db: any) {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    db.close();
   } catch (e) {
     console.warn("[Prisma] Failed to initialize SQLite tables:", e);
   }
@@ -59,9 +63,12 @@ function createPrismaClient(): PrismaClient {
     try {
       const tmpPath = path.join("/tmp", "unicare_dev.db");
       const localPath = path.resolve(process.cwd(), "dev.db");
+      const prismaPath = path.resolve(process.cwd(), "prisma", "dev.db");
       if (!fs.existsSync(tmpPath)) {
         if (fs.existsSync(localPath)) {
           fs.copyFileSync(localPath, tmpPath);
+        } else if (fs.existsSync(prismaPath)) {
+          fs.copyFileSync(prismaPath, tmpPath);
         } else {
           fs.writeFileSync(tmpPath, "");
         }
@@ -76,13 +83,11 @@ function createPrismaClient(): PrismaClient {
     dbFilePath = path.isAbsolute(relative) ? relative : path.resolve(process.cwd(), relative);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Database = require("better-sqlite3");
+  initSqliteTables(dbFilePath);
+
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
-  const db = new Database(dbFilePath);
-  initSqliteTables(db);
-  const adapter = new PrismaBetterSqlite3(db, { url: dbFilePath });
+  const adapter = new PrismaBetterSqlite3({ url: dbFilePath });
   return new PrismaClient({ adapter });
 }
 
